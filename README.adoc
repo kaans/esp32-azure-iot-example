@@ -1,0 +1,203 @@
+# ESP Azure IoT Example
+
+WARNING: This repository is work in progress and subject to change. It is not guaranteed
+that any folder structure is stable (yet), because some planned refactorings have
+not been implemented yet. It is working as of now (24.01.2021) and can serve as a source
+for ideas, concepts as well as source code.
+
+
+:imagesdir: ./doc/images
+
+This repository contains an example how to use the 
+https://github.com/Azure/azure-iot-sdk-c[Azure IoT Client SDK C]
+on an
+https://www.espressif.com/en/products/socs/esp32[ESP32 device] from Espressif.
+It uses the
+https://github.com/espressif/esp-azure[esp-azure port] from Espressif
+for inclusion of the Azure IoT SDK C as an 
+https://docs.espressif.com/projects/esp-idf/en/latest/esp32/[esp-idf component].
+
+
+
+## Important links
+
+* https://docs.espressif.com/projects/esp-idf/en/latest/esp32/get-started/[ESP-IDF installation]
+* https://github.com/espressif/esp-idf-template[ESP-IDF template project]
+* https://github.com/Azure-Samples/ESP-Samples[ESP Samples]
+* https://github.com/espressif/esp-azure[Azure ESP samples for iot hub]
+
+## Prerequisits
+
+### ESP IoT Development Framework (ESP-IDF)
+
+1. Install the https://docs.espressif.com/projects/esp-idf/en/latest/esp32/get-started/[ESP-IDF]
+according to the official installation instructions
+
+2. The repository is cloned by default into the folder `%HOME%/esp/esp-idf`
+
+3. The installation script installs the tools into `~/.espressif` (Linux)
+by default. If you want the tools
+to be installed elsewhere, set the environment variable `IDF_TOOLS_PATH` to the desired
+path. Run the script `~/esp/esp-idf/install.sh` after setting this variable.
+
+4. Execute the command `~/esp/esp-idf/export.sh` to enable the esp-idf environment in the
+current shell.
+
+5. Optionally add an alias to your shell to enable idf development in the current shell via
+a command. In the installation instructions, a command named `get_idf` is created for that,
+which will be referenced further in this document. If you make any changes to the name of the
+alias or the installation path of the esp-idf repository, make sure to adjust the command accordingly:
+`alias get_idf='. ~/esp/esp-idf/export.sh'`
+
+### Supported devices
+
+The project has only been tested with ESP32 devices, more specifically ESP-WROOM-32.
+
+In general other devices like ESP32-S2, ESP32-C3 or even ESP8266 should be able to run the project,
+if the esp-idf SDK supports them. Of course, some hardware features might not be available or need
+adjustment. Furthermore, each device can have a different size of flash memory. This must be large
+enough to hold the final binary application image including OTA, NVS and other partitions.
+
+## Installation
+
+1. Clone the repository including all submodules:
+
+``` bash
+$ git clone --recursive https://github.com/kaans/esp32-azure-iot.git
+```
+
+### Update submodules if necessary
+
+`git submodule update --init --recursive`
+
+
+### Environment variables
+
+The following environment variables should be available in your environment.
+The value might be different depending on your system and configuration.
+
+.Environment variables
+|===
+|Name |Description |Example value
+
+|IDF_PATH
+|https://github.com/espressif/esp-idf.git
+|~/esp/esp-idf
+
+|IDF_TOOLS_EXPORT_CMD
+|Path to command for exporting the environment in the current shell
+|~/esp/esp-idf/export.sh
+
+|IDF_TOOLS_INSTALL_CMD
+|Path to the installation script
+|~/esp/esp-idf/install.sh
+
+|IDF_PYTHON_ENV_PATH
+|Path to the python distribution used for IDF framework
+|~/.espressif/python_env/idf4.3_py3.8_env
+
+|===
+
+include::./doc/configuration.adoc[leveloffset=+1]
+
+## Set project version
+
+The project version can be set in CMakeLists.txt in the root of the project.
+
+The line `set(PROJECT_VER "0.9.2")` sets the variable `PROJECT_VER` (here to the
+value of "0.9.2").
+
+The project version is included in the built binary image and can be read during
+runtime with the function `esp_ota_get_app_description()`.
+
+## Usefull commands for idf.py
+
+### Speed up build with ccache
+
+Install https://ccache.dev[ccache], e.g. with `sudo apt install ccache`
+which will cache the build files and speed up build dramatically.
+
+Use the flag `--ccache` with any idf.py commands to enable
+the usage of ccache, e.g.:
+
+[source,bash]
+----
+idf.py --ccache build
+----
+
+NOTE: This is presumably more useful on developer machines than
+on CI pipelines or other automated systems without cache.
+
+### Get size of compiled binary, components and files
+
+The following commands list the size of either the whole compiled
+binary file, each component, or files separately.
+
+Use the flag `-DOUTPUT_JSON=1` to get the output in JSON format.
+
+.Get size and memory usage of whole compiled binary
+[source,bash]
+----
+idf.py size
+----
+
+.Get size and memory usage of each component
+[source,bash]
+----
+idf.py size-components
+----
+
+.Get size and memory usage of each compiled file
+[source,bash]
+----
+idf.py size-files
+----
+
+### Create a new component
+
+Components by default are stored in the `components` directory
+on the root of the project. Each component has its own 
+subdirectory that defines the name of the component.
+
+Issue the following command to create a new component with the
+name `name_of_component`:
+
+[source,bash]
+----
+idf.py create-component -C components name_of_component
+----
+
+If you want to create or use a component from a different folder than
+`components`, the folder must be added to the file `CMakeLists.txt` in the repository root.
+Add the folder as a new entry to the list *EXTRA_COMPONENT_DIRS*.
+
+.Example of EXTRA_COMPONENT_DIRS with custom component folders
+[source]
+----
+list(APPEND EXTRA_COMPONENT_DIRS
+    "${CMAKE_CURRENT_LIST_DIR}/azure-iot-device/components"
+    "${CMAKE_CURRENT_LIST_DIR}/esp-azure/port"
+    "${CMAKE_CURRENT_LIST_DIR}/esp-idf-lib/components"
+    "<add your component to this list here or on top>")
+----
+
+### Build API documentation (mbedtls)
+
+NOTE: The apidoc command available as build command only
+builds the apidoc for mbedtls library.
+
+Install_doxygen_ https://www.doxygen.nl/manual/install.html[from source] or as https://wiki.ubuntuusers.de/Doxygen/[binary].
+Optionally instlal graphviz to generate charts and diagrams
+as well.
+
+[source,bash]
+----
+sudo apt install doxygen graphviz
+----
+
+Execute the following command to generate the api documentation:
+
+[source,bash]
+----
+idf.py apidoc
+----

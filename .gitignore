@@ -1,0 +1,13 @@
+.settings
+.project
+.cproject
+.vscode
+.pio
+
+build
+sdkconfig
+sdkconfig.old
+certs/*
+
+!nvs_factory/nvs_factory.csv
+nvs_factory/*

@@ -1,0 +1,57 @@
+# General configuration
+
+:imagesdir: ./images
+
+The central configuration tool for the build options and module configuration is `menuconfig`.
+It can be started with the `idf.py` tool:
+
+[source,bash]
+----
+idf.py menuconfig
+----
+
+.Menuconfig start view
+image::menuconfig_start_view.png[menuconfig overview]
+
+Many options can be customized here, but always make sure to have an understanding of
+the consequences changes of the configuration has on the build process and the final
+image.
+
+The following sections give an overview of some important configuration options.
+Refer to https://docs.espressif.com/projects/esp-idf/en/latest/esp32/api-reference/kconfig.html[ESP-IDF Project configuration] for a detailed description of all options.
+
+## Menu: Bootloader config
+
+This menu allows the user to configure the bootloader. Usually the default values are fine but
+can be fine tuned, like the verbosity of the logger or the optimization level of the compiler.
+
+[#menu-bootloader-config]
+.Menu bootloader config
+image::menuconfig_bootloader_config.png[Menu bootloader config]
+
+In case https://docs.espressif.com/projects/esp-idf/en/latest/esp32/api-reference/system/ota.html?highlight=app%20rollback#over-the-air-updates-ota[OTA]
+ updates are used, it might be interesting to enable a factory reset by using
+a button connected to a GPIO pin. By enabling the corresponding option, the bootloader
+adds some functionality to boot from the factory partition instead of any OTA partition,
+and optionally clears OTA partitions.
+
+Additionally, https://docs.espressif.com/projects/esp-idf/en/latest/esp32/api-reference/system/ota.html?highlight=app%20rollback#app-rollback[app rollback]
+can be enabled when using OTA. If enabled, a new OTA firmware
+image must set the new firmware partition as valid so that the bootloader will boot it
+on the next reboot. If it is not marked as valid, the bootloader will boot from the previous
+valid OTA partition.
+
+## Menu: Serial flasher config
+
+With the options in this menu the parameters regarding the flashing process can be configured.
+Usually the defaults are fine, as shown in figure <<menu-serial-flasher>>.
+
+[[menu-serial-flasher]]
+.Menu serial flasher
+image::menuconfig_serial_flasher.png[Menu serial flasher]
+
+The size of the available flash is, by default, set to 2MB. Many widely available ESP32
+boards have a different size of the flash, for example 4MB. Make sure to configure the 
+correct size. If the size is not correct, for example smaller than the actual size,
+an error will be shown when flashing the binary image or building the partition table image,
+saying that the generated image does not fit into the flash.

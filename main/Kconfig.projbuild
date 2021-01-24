@@ -1,0 +1,123 @@
+menu "Main Configuration"
+
+config EXAMPLE_DHT_ENABLE
+	bool "Enable DHT22 sensors reading"
+	default false
+	help
+		Enables reading out a connected DHT22 temperature and
+		humidity sensor.
+
+config EXAMPLE_DHT_PIN
+	int "Pin where the DHT22 sensors is connected"
+	default 27
+	depends on EXAMPLE_DHT_ENABLE
+	help
+		Enables reading out a connected DHT22 temperature and
+		humidity sensor.
+		
+endmenu
+
+menu "WiFi Configuration"
+
+config WIFI_PROV_ENABLE
+	bool "Enable WiFi provisioning"
+	default true
+	help
+		Enable provisioning of the WiFi connection via BLE or SoftAP.
+		This allows the device to be configured when no WiFi configuration
+		has been applied before, or if the last configuration is not valid
+		anymore.
+
+config WIFI_MAXIMUM_RETRY
+	int "WiFi maximum retries"
+	default -1
+	depends on WIFI_PROV_ENABLE
+	help
+		Maximum number of retries to connect to the given WiFi.
+		If -1, it will retry indefinitely to reconnect.
+		If 0, it will not retry to connect after the first try.
+		If > 0, it will retry the given amount of times to 
+		connect to the WiFi.
+
+		If a connection could not be established in the given
+		amount of retries, the device needs to be restarted to
+		try connecting again.
+
+choice WIFI_PROV_SCHEME
+	prompt "Choose a provisioning scheme"
+	depends on WIFI_PROV_ENABLE
+
+config WIFI_PROV_SCHEME_BLE
+	bool "BLE"
+
+config WIFI_PROV_SCHEME_SOFTAP
+	bool "SoftAP"
+
+config WIFI_PROV_SCHEME_MANUAL
+	bool "Manual"
+
+endchoice
+
+# manual provisioning
+
+config WIFI_SSID
+    string "WiFi SSID"
+	default "myssid"
+	depends on WIFI_PROV_ENABLE && WIFI_PROV_SCHEME_MANUAL
+	help
+		SSID (network name) for the example to connect to.
+
+config WIFI_PASSWORD
+    string "WiFi Password"
+	default "myssid"
+	depends on WIFI_PROV_ENABLE && WIFI_PROV_SCHEME_MANUAL
+	help
+		WiFi password (WPA or WPA2) for the example to use.
+
+		Can be left blank if the network has no security set.
+
+# not manual/automatic provisioning
+
+choice WIFI_PROV_SECURITY
+	prompt "Choose provisioning security scheme"
+	depends on WIFI_PROV_ENABLE && !WIFI_PROV_SCHEME_MANUAL
+
+config WIFI_PROV_SECURITY_0
+	bool "Security 0"
+	help
+		No security, plain text communication
+
+config WIFI_PROV_SECURITY_1
+	bool "Security 1"
+	help
+		Secure communication with handshake using X25519 key exchange
+		and proof of posession (pop), as well as AES-CTR for encrypting
+		and decrypting messasges
+
+endchoice
+
+config WIFI_PROV_POP
+    string "WiFi proof of posession (security 1 only)"
+	default "abcd1234"
+	depends on WIFI_PROV_SECURITY_1
+	help
+		Proof of posession. Can ba a string of length >0 and will need
+		to be entered by the user when provisionig this device.
+		Only required if security is level 1.
+
+config WIFI_PROV_SERVICE_KEY
+	string "WiFi service key (length >=8, SoftAP only)"
+	depends on WIFI_PROV_SCHEME_SOFTAP
+	help
+		WiFi password of AP when using SoftAP scheme. Not relevant
+		for BLE or any other provisioning schemes.
+		The length of the service key must be 8 or more characters.
+
+config WIFI_PROV_SERVICE_NAME_PREFIX
+	string "Service name prefix (BLE/SoftAP)"
+	default "PROV_"
+	depends on !WIFI_PROV_SCHEME_MANUAL
+	help
+		Prefix of the device name shown to the user used during provisioning. 
+
+endmenu
